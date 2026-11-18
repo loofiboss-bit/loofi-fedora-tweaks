@@ -64,6 +64,7 @@ class TestV31CliParity(unittest.TestCase):
         )
         self.read_outputs = dict(READ_OUTPUTS)
         self.patchers = [
+            patch("core.actions.catalog.platform.freedesktop_os_release", return_value={"ID": "fedora", "VERSION_ID": "44"}),
             patch("core.platform.profile.detect_platform_profile", return_value=self.mock_profile),
             patch("cli.commands.tweaks_commands.detect_platform_profile", return_value=self.mock_profile),
             patch("cli.commands.apps_commands.detect_platform_profile", return_value=self.mock_profile),

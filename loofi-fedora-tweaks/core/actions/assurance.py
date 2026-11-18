@@ -302,13 +302,6 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
                 ("cpu-governor",),
             ),
             _choice_manual_definition(
-                "set-power-profile",
-                "Set power profile",
-                "profile",
-                {"power-saver", "balanced", "performance"},
-                ("power-profile",),
-            ),
-            _choice_manual_definition(
                 "set-gpu-mode",
                 "Set GPU mode",
                 "mode",

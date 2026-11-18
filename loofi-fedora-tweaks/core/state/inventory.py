@@ -50,6 +50,8 @@ class StateInventory:
         p = self.paths
         definitions = (
             ("settings", "config", p.config / "settings.json", "loofi.settings", SETTINGS_SCHEMA_VERSION, "private", "indefinite", "last-known-good"),
+            ("favorites", "navigation", p.config / "favorites.json", "loofi.favorites", 3, "private", "indefinite", "last-known-good"),
+            ("activity_history", "history", p.config / "history.json", "loofi.activity-history", 2, "private", "50 events", "last-known-good"),
             ("home_onboarding", "home", p.config / "onboarding.json", "loofi.home-onboarding", 1, "private", "until completed or dismissed", "reset"),
             ("health_snapshots", "observability", p.data / "health_timeline_v12.json", "loofi.health-snapshots", 1, "private", "30 snapshots", "last-known-good"),
             ("metric_timeline", "observability", p.data / "health_timeline.db", "loofi.metric-timeline", 1, "private", "30 days", "sqlite-integrity"),

@@ -1,5 +1,5 @@
 ### [Loofi Fedora Tweaks](Home)
-**v28.0.2 "Ease"**
+**v36.1.0 "Blueprint"**
 
 ---
 

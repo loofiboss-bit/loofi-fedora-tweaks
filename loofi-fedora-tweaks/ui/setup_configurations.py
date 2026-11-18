@@ -21,6 +21,7 @@ from core.tasks.setup_configurations import (
 from core.tasks.tweak_profiles import TweakProfile
 from core.tasks.tweaks import TweakState
 from services.software.installed_applications import InstalledApplication, InstalledInventory
+from ui.components import Card
 
 
 class SetupConfigurationsPage(QWidget):
@@ -106,6 +107,14 @@ class SetupConfigurationsPage(QWidget):
         actions.addStretch(1)
         root.addLayout(actions)
 
+        self.comparison_card = Card(self.tr("Latest comparison"), parent=self)
+        self.comparison_card.setObjectName("setupComparisonSummaryCard")
+        self.comparison_summary_label = QLabel(self)
+        self.comparison_summary_label.setWordWrap(True)
+        self.comparison_card.add_widget(self.comparison_summary_label)
+        self.comparison_card.hide()
+        root.addWidget(self.comparison_card)
+
         self.tabs = QTabWidget()
         root.addWidget(self.tabs, 1)
         self.app_search = QLineEdit()
@@ -120,10 +129,18 @@ class SetupConfigurationsPage(QWidget):
         self.setting_search = QLineEdit()
         self.setting_search.setPlaceholderText(self.tr("Filter supported settings…"))
         self.setting_search.setAccessibleName(self.tr("Filter supported settings"))
+        self.profiles_button = QPushButton(self.tr("Tweak profiles"))
+        self.profiles_button.setAccessibleName(self.tr("Open Tweak profiles"))
+        self.profiles_button.setToolTip(self.tr("Browse and manage personal settings profiles"))
+        self.profiles_button.setAutoDefault(False)
+        self.profiles_button.clicked.connect(lambda: self.routeRequested.emit("tune", {"section": "profiles"}))
         self.settings_model, self.settings_proxy, self.settings_table = self._make_table((self.tr("Include"), self.tr("Setting"), self.tr("Current value")))
         settings_tab = QWidget()
         settings_layout = QVBoxLayout(settings_tab)
-        settings_layout.addWidget(self.setting_search)
+        settings_controls = QHBoxLayout()
+        settings_controls.addWidget(self.setting_search, 1)
+        settings_controls.addWidget(self.profiles_button)
+        settings_layout.addLayout(settings_controls)
         settings_layout.addWidget(self.settings_table)
         self.tabs.addTab(settings_tab, self.tr("Settings"))
         self.app_search.textChanged.connect(self.app_proxy.setFilterFixedString)
@@ -427,6 +444,20 @@ class SetupConfigurationsPage(QWidget):
                                      .replace("%2", summary))
 
     def show_comparison(self, comparison: object) -> None:
+        entries = tuple(getattr(comparison, "entries", ()))
+        counts: dict[str, int] = {}
+        for entry in entries:
+            status_name = str(getattr(entry, "status", "unknown"))
+            counts[status_name] = counts.get(status_name, 0) + 1
+        summary_parts = ", ".join(
+            f"{count} {status_name.replace('_', ' ')}" for status_name, count in sorted(counts.items())
+        )
+        self.comparison_summary_label.setText(
+            self.tr("%1 items compared (%2).")
+            .replace("%1", str(len(entries)))
+            .replace("%2", summary_parts or self.tr("no entries"))
+        )
+        self.comparison_card.show()
         dialog = QDialog(self)
         dialog.setWindowTitle(self.tr("Configuration comparison"))
         dialog.setAccessibleName(self.tr("Read-only comparison with this computer"))

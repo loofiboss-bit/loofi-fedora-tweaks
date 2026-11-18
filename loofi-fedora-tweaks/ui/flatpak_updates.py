@@ -13,6 +13,8 @@ class FlatpakUpdatesCard(Card):
     routeRequested = pyqtSignal(str, object)
     stopped = pyqtSignal()
     checkStarted = pyqtSignal()
+    snapshotApplied = pyqtSignal(object)
+    checkFailed = pyqtSignal(str)
 
     def __init__(self, *, service=None, show_updates_link=False, parent=None):
         super().__init__(self.tr("Flatpak applications"), self.tr("Check each installation, select applications, then review their complete transaction."))
@@ -44,6 +46,7 @@ class FlatpakUpdatesCard(Card):
         self.search.setPlaceholderText(self.tr("Filter Flatpak updates…"))
         self.search.setAccessibleName(self.tr("Filter Flatpak updates"))
         self.search.textChanged.connect(self._filter)
+        self.search.hide()
         self.add_widget(self.search)
         self.record_button = QPushButton(self.tr("Open recorded operation"))
         self.record_button.clicked.connect(lambda: self.routeRequested.emit("changes", {"run_id": self._run_id}))
@@ -56,7 +59,7 @@ class FlatpakUpdatesCard(Card):
         self._adapter = OperationControllerQtAdapter(parent=self)
         self._adapter.started.connect(self.checkStarted.emit)
         self._adapter.finished.connect(self.apply_snapshot)
-        self._adapter.failed.connect(lambda message: self.status.setText(self.tr("Update check unavailable: %1").replace("%1", str(message))))
+        self._adapter.failed.connect(self._on_check_failed)
         self._adapter.cancelled.connect(lambda: self.status.setText(self.tr("Update check cancelled.")))
         self._adapter.stopped.connect(self._stopped)
 
@@ -101,6 +104,11 @@ class FlatpakUpdatesCard(Card):
             self.body.removeWidget(group)
             group.deleteLater()
         self._groups, self._rows = [], []
+        self.search.hide()
+
+    def _on_check_failed(self, message: str) -> None:
+        self.status.setText(self.tr("Update check unavailable: %1").replace("%1", str(message)))
+        self.checkFailed.emit(str(message))
 
     def apply_snapshot(self, snapshot):
         if isinstance(snapshot, tuple) and len(snapshot) == 2:
@@ -167,10 +175,12 @@ class FlatpakUpdatesCard(Card):
             layout.addLayout(buttons)
             self._groups.append(group)
             self.add_widget(group)
+        self.search.setVisible(bool(self._rows))
         self._filter(self.search.text())
         if auto_review:
             self.review(self._installation)
         self._auto_review = False
+        self.snapshotApplied.emit(data)
 
     def _select(self, identity, checked):
         if checked:

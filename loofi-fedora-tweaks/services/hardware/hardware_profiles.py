@@ -129,6 +129,15 @@ def detect_hardware_profile():
     # Fallback: check if laptop (has battery) or desktop
     has_battery = os.path.exists("/sys/class/power_supply/BAT0") or os.path.exists("/sys/class/power_supply/BAT1")
     fallback = "generic-laptop" if has_battery else "generic-desktop"
+    if fallback == "generic-laptop":
+        for bat in ("BAT0", "BAT1"):
+            threshold_path = f"/sys/class/power_supply/{bat}/charge_control_end_threshold"
+            if os.path.exists(threshold_path):
+                return fallback, {
+                    **PROFILES[fallback],
+                    "battery_limit": True,
+                    "battery_path": threshold_path,
+                }
     return fallback, PROFILES[fallback]
 
 

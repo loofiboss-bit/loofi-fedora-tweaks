@@ -139,32 +139,6 @@ class TweaksPage(QWidget, PluginInterface):
         self.cancel_snapshot_button.clicked.connect(self.cancelSnapshotRequested.emit)
         self.cancel_snapshot_button.hide()
         search_row.addWidget(self.cancel_snapshot_button, 0, 2)
-
-        self.save_profile_button = QPushButton(self.tr("Save profile…"))
-        self.save_profile_button.setAccessibleName(self.tr("Save current settings as a portable profile"))
-        self.save_profile_button.clicked.connect(self.saveProfileRequested.emit)
-
-        self.load_profile_button = QPushButton(self.tr("Load profile…"))
-        self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
-        self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
-
-        self.preset_button = QPushButton(self.tr("My profile library…"))
-        self.preset_button.setAccessibleName(self.tr("Review, export or remove local desktop profiles"))
-        self.preset_button.clicked.connect(self.choosePresetRequested.emit)
-        self.profile_menu_button = QToolButton()
-        self.profile_menu_button.setText(self.tr("Profiles"))
-        self.profile_menu_button.setAccessibleName(self.tr("Profile and preset actions"))
-        self.profile_menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        profile_menu = QMenu(self.profile_menu_button)
-        self.profile_menu_button.setMenu(profile_menu)
-        for label, signal in (("Save profile…", self.saveProfileRequested), ("Load profile…", self.loadProfileRequested), ("My profile library…", self.choosePresetRequested)):
-            action = QAction(self.tr(label), profile_menu)
-            profile_menu.addAction(action)
-            action.triggered.connect(signal.emit)
-        self.profile_menu_button.hide()
-        self.save_profile_button.hide()
-        self.load_profile_button.hide()
-        self.preset_button.hide()
         search_row.setColumnStretch(0, 1)
 
         intro.add_widget(self._wrap(search_row))
@@ -304,7 +278,7 @@ class TweaksPage(QWidget, PluginInterface):
             reset_action.setDefaultWidget(reset)
             menu.addAction(reset_action)
             details_action = QWidgetAction(menu)
-            details = QLabel(self.tr("ID: %1\nLoofi standard: %2\nScope: %3").replace("%1", tweak.id).replace("%2", self._label_for(tweak.id, default_for(tweak))).replace("%3", self.tr("System") if tweak.system_wide else self.tr("Current user")))
+            details = QLabel(self.tr("Setting ID: %1\nLoofi standard: %2\nScope: %3").replace("%1", tweak.id).replace("%2", self._label_for(tweak.id, default_for(tweak))).replace("%3", self.tr("System") if tweak.system_wide else self.tr("Current user")))
             details.setWordWrap(True)
             details.setMargin(12)
             details_action.setDefaultWidget(details)
@@ -389,7 +363,7 @@ class TweaksPage(QWidget, PluginInterface):
 
     def showEvent(self, event: Any) -> None:
         super().showEvent(event)
-        if self._rows:
+        if self._rows and not self._shown_once:
             self._shown_once = True
             QTimer.singleShot(0, self.refreshRequested.emit)
 
@@ -572,10 +546,6 @@ class TweaksPage(QWidget, PluginInterface):
         self._reading = busy and cancellable
         for button in self.cursor_settings_buttons.values():
             button.setEnabled(self._cursor_settings_available and not busy)
-        self.save_profile_button.setEnabled(not busy)
-        self.load_profile_button.setEnabled(not busy)
-        self.preset_button.setEnabled(not busy)
-        self.profile_menu_button.setEnabled(not busy)
         if hasattr(self, "profile_views"):
             self.profile_views.setEnabled(not busy)
         self.cancel_snapshot_button.setText(self.tr("Cancel check"))
@@ -868,8 +838,11 @@ class TweaksPage(QWidget, PluginInterface):
         if key == "profile-library":
             self._profile_focus_pending = True
             self.set_subview("profiles")
-            if self.profile_views.currentWidget() is self.profile_editor_view and self.profile_editor_view is not None:
-                self.profile_editor_view.name.setFocus(Qt.FocusReason.OtherFocusReason)
+            editor = self.profile_editor_view
+            if editor is not None and self.profile_views.currentWidget() is editor:
+                name_input = getattr(editor, "name", None)
+                if name_input is not None:
+                    name_input.setFocus(Qt.FocusReason.OtherFocusReason)
             else:
                 self.profile_library_view.focus_entries()
             return True

@@ -284,9 +284,7 @@ class TestPyQtBoundaryImports:
         "core/workers/system_check_worker.py",
         "core/workers/troubleshooting_worker.py",
     }
-    ALLOWED_SERVICE_PYQT_IMPORTS = {
-        "services/security/safety.py",
-    }
+    ALLOWED_SERVICE_PYQT_IMPORTS: set[str] = set()
 
     def _pyqt_imports(self, base: Path) -> set[str]:
         hits: set[str] = set()

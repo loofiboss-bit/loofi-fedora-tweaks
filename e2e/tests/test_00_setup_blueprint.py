@@ -72,9 +72,11 @@ def accept_preview():
 QTimer.singleShot(0, accept_preview)
 if not page._show_import_preview(document):
     raise RuntimeError("Portable import preview was not accepted.")
+if not hasattr(page, "comparison_card") or not hasattr(page, "profiles_button"):
+    raise RuntimeError("SetupConfigurationsPage is missing Stage 3 integration controls.")
 page.close()
 '''
-    environment = {**os.environ, "QT_QPA_PLATFORM": "offscreen", "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "0"}
+    environment = {**os.environ, "QT_QPA_PLATFORM": "offscreen", "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "1"}
     subprocess.run([sys.executable, "-c", preview, str(preview_path)], check=True, timeout=30,
                    capture_output=True, text=True, env=environment)
 

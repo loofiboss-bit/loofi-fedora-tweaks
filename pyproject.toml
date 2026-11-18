@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "loofi_fedora_tweaks"
-version = "36.1.0"
+version = "36.2.0"
 description = "A Fedora maintenance and desktop control center with GUI and CLI modes"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -78,17 +78,12 @@ source = ["loofi-fedora-tweaks"]
 # entrypoints (including the unregistered legacy log viewer), the removed
 # profile/mesh stacks, and deprecated utility shims.
 omit = [
-    "loofi-fedora-tweaks/cli/action_plans.py",
     "loofi-fedora-tweaks/cli/commands/plugin_commands.py",
     "loofi-fedora-tweaks/cli/commands/system_commands.py",
-    "loofi-fedora-tweaks/core/profiles/*",
     "loofi-fedora-tweaks/core/workers/troubleshooting_worker.py",
-    "loofi-fedora-tweaks/core/diagnostics/gaming_audit.py",
     "loofi-fedora-tweaks/core/export/support_bundle_v2.py",
     "loofi-fedora-tweaks/core/export/support_bundle_v13.py",
     "loofi-fedora-tweaks/services/desktop/tiling.py",
-    "loofi-fedora-tweaks/ui/logs_tab.py",
-    "loofi-fedora-tweaks/ui/performance_tab.py",
     "loofi-fedora-tweaks/ui/snapshot_tab.py",
     "loofi-fedora-tweaks/utils/desktop_utils.py",
     "loofi-fedora-tweaks/utils/firewall_manager.py",

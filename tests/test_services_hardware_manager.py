@@ -46,6 +46,11 @@ class TestCpuGovernors(unittest.TestCase):
     def test_set_governor_success(self, _mock_governors, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
         self.assertTrue(HardwareManager.set_governor('performance'))
+        cmd = mock_run.call_args.args[0]
+        self.assertEqual(cmd[:2], ['pkexec', 'tee'])
+        self.assertNotIn('bash', cmd)
+        self.assertNotIn('-c', cmd)
+        self.assertEqual(mock_run.call_args.kwargs.get('input'), 'performance\n')
 
     @patch('services.hardware.hardware.subprocess.run', side_effect=OSError('boom'))
     @patch('services.hardware.hardware.HardwareManager.get_available_governors', return_value=['performance'])

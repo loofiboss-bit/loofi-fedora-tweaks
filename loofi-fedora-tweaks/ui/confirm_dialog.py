@@ -20,6 +20,8 @@ Usage::
         ...
 """
 
+from typing import Any, Callable
+
 from PyQt6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -377,3 +379,57 @@ class ConfirmActionDialog(QDialog):
             action_key=action_key,
         )
         return bool(dialog.exec() == QDialog.DialogCode.Accepted)
+
+
+def confirm_safety_action(
+    parent: Any,
+    description: str,
+    *,
+    check_snapshot_tool: Callable[[], str | None],
+    create_snapshot: Callable[[str, str], bool],
+) -> bool:
+    """Prompt the user to confirm an action, optionally creating a snapshot first."""
+    from PyQt6.QtWidgets import QMessageBox
+
+    tool = check_snapshot_tool()
+
+    msg = QMessageBox(parent)
+    msg.setWindowTitle("Safety Check")
+    msg.setText(f"You are about to: {description}")
+    msg.setInformativeText("It is recommended to create a system snapshot before proceeding.")
+    msg.setIcon(QMessageBox.Icon.Warning)
+
+    msg.addButton("Continue Without Snapshot", QMessageBox.ButtonRole.ActionRole)
+    btn_cancel = msg.addButton(QMessageBox.StandardButton.Cancel)
+
+    btn_snapshot = None
+    if tool:
+        btn_snapshot = msg.addButton(
+            f"Create {tool.capitalize()} Snapshot & Continue",
+            QMessageBox.ButtonRole.ActionRole,
+        )
+        msg.setDefaultButton(btn_snapshot)
+    else:
+        msg.setDefaultButton(btn_cancel)
+
+    msg.exec()
+
+    clicked = msg.clickedButton()
+    if clicked == btn_cancel:
+        return False
+
+    if tool and clicked == btn_snapshot:
+        parent.setDisabled(True)
+        success = create_snapshot(tool, f"Pre-{description.split(' ')[0]}")
+        parent.setDisabled(False)
+
+        if not success:
+            QMessageBox.warning(
+                parent,
+                "Snapshot Failed",
+                "Could not create snapshot. Proceeding regardless...",
+            )
+        else:
+            QMessageBox.information(parent, "Snapshot Created", "System snapshot created successfully.")
+
+    return True

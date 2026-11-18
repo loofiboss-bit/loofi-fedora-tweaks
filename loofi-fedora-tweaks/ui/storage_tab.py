@@ -23,8 +23,9 @@ from PyQt6.QtWidgets import (
 from utils.storage import StorageManager
 
 from ui.base_tab import BaseTab
-from ui.components import PageScaffold
+from ui.components import DetailsDisclosure, PageScaffold
 from ui.design import semantic_color
+from ui.operation_worker import OperationControllerQtAdapter
 
 
 class StorageTab(BaseTab):
@@ -42,8 +43,11 @@ class StorageTab(BaseTab):
 
     def __init__(self):
         super().__init__()
+        self._refresh_adapter = OperationControllerQtAdapter(parent=self)
+        self._refresh_adapter.finished.connect(self._apply_async_snapshot)
+        self._refresh_adapter.failed.connect(self._on_async_refresh_failed)
         self.init_ui()
-        QTimer.singleShot(200, self._refresh_all)
+        QTimer.singleShot(200, self._request_async_refresh)
 
     def init_ui(self):
         root = QVBoxLayout(self)
@@ -88,10 +92,10 @@ class StorageTab(BaseTab):
         btn_smart.clicked.connect(self._check_smart)
         disk_btn_layout.addWidget(btn_smart)
 
-        btn_refresh_disks = QPushButton(self.tr("Refresh"))
-        btn_refresh_disks.setAccessibleName(self.tr("Refresh disks"))
-        btn_refresh_disks.clicked.connect(self._refresh_all)
-        disk_btn_layout.addWidget(btn_refresh_disks)
+        self.btn_refresh_disks = QPushButton(self.tr("Refresh"))
+        self.btn_refresh_disks.setAccessibleName(self.tr("Refresh disks"))
+        self.btn_refresh_disks.clicked.connect(self._request_async_refresh)
+        disk_btn_layout.addWidget(self.btn_refresh_disks)
         dl_layout.addLayout(disk_btn_layout)
 
         layout.addWidget(disk_group)
@@ -175,8 +179,10 @@ class StorageTab(BaseTab):
 
         layout.addWidget(smart_group)
 
-        # Output area from BaseTab
-        layout.addWidget(self.output_area)
+        # Output area from BaseTab inside collapsible disclosure
+        self.output_disclosure = DetailsDisclosure(summary=self.tr("Show command output"))
+        self.output_disclosure.add_widget(self.output_area)
+        layout.addWidget(self.output_disclosure)
         layout.addStretch()
 
     # ============================================================
@@ -210,43 +216,75 @@ class StorageTab(BaseTab):
 
         table.setFixedHeight(table_height)
 
+    def _request_async_refresh(self) -> None:
+        """Refresh disk and mount observations off the Qt main thread."""
+        if self._refresh_adapter.busy:
+            return
+        self.btn_refresh_disks.setEnabled(False)
+        self._refresh_adapter.start(
+            lambda: (StorageManager.list_disks(), StorageManager.list_mounts())
+        )
+
+    def _apply_async_snapshot(self, payload: object) -> None:
+        self.btn_refresh_disks.setEnabled(True)
+        if not isinstance(payload, tuple) or len(payload) != 2:
+            return
+        disks, mounts = payload
+        self._render_disks(disks)
+        self._render_mounts(mounts)
+
+    def _on_async_refresh_failed(self, message: str) -> None:
+        self.btn_refresh_disks.setEnabled(True)
+        self.append_output(f"Error refreshing storage: {message}\n")
+
+    def request_stop(self) -> None:
+        """Cancel any active storage inspection worker."""
+        self._refresh_adapter.cancel()
+
+    def cleanup(self, timeout_ms: int = 1000) -> bool:
+        """Wait briefly for storage workers on shutdown."""
+        return bool(self._refresh_adapter.close(timeout_ms))
+
     def _refresh_all(self):
         """Refresh disk and mount tables."""
         self._refresh_disks()
         self._refresh_mounts()
 
+    def _render_disks(self, disks: list) -> None:
+        self.disk_table.clearSpans()
+        self.disk_table.setRowCount(0)
+
+        if not disks:
+            self.set_table_empty_state(
+                self.disk_table, self.tr("No disks detected")
+            )
+            self._fit_table_height(self.disk_table, max_visible_rows=3)
+            return
+
+        for disk in disks:
+            row = self.disk_table.rowCount()
+            self.disk_table.insertRow(row)
+            self.disk_table.setItem(row, 0, self.make_table_item(disk.path))
+            self.disk_table.setItem(row, 1, self.make_table_item(disk.model or "—"))
+            self.disk_table.setItem(row, 2, self.make_table_item(disk.size))
+            self.disk_table.setItem(
+                row,
+                3,
+                self.make_table_item("NVMe" if "nvme" in disk.name else "SATA/USB"),
+            )
+            self.disk_table.setItem(
+                row, 4, self.make_table_item("Yes" if disk.rm else "No")
+            )
+        normalize = getattr(BaseTab, "ensure_table_row_heights", None)
+        if callable(normalize):
+            normalize(self.disk_table)
+        self._fit_table_height(self.disk_table, max_visible_rows=3)
+
     def _refresh_disks(self):
         """Refresh physical disk table."""
         try:
             disks = StorageManager.list_disks()
-            self.disk_table.clearSpans()
-            self.disk_table.setRowCount(0)
-
-            if not disks:
-                self.set_table_empty_state(
-                    self.disk_table, self.tr("No disks detected")
-                )
-                self._fit_table_height(self.disk_table, max_visible_rows=3)
-                return
-
-            for disk in disks:
-                row = self.disk_table.rowCount()
-                self.disk_table.insertRow(row)
-                self.disk_table.setItem(row, 0, self.make_table_item(disk.path))
-                self.disk_table.setItem(row, 1, self.make_table_item(disk.model or "—"))
-                self.disk_table.setItem(row, 2, self.make_table_item(disk.size))
-                self.disk_table.setItem(
-                    row,
-                    3,
-                    self.make_table_item("NVMe" if "nvme" in disk.name else "SATA/USB"),
-                )
-                self.disk_table.setItem(
-                    row, 4, self.make_table_item("Yes" if disk.rm else "No")
-                )
-            normalize = getattr(BaseTab, "ensure_table_row_heights", None)
-            if callable(normalize):
-                normalize(self.disk_table)
-            self._fit_table_height(self.disk_table, max_visible_rows=3)
+            self._render_disks(disks)
         except (RuntimeError, OSError, ValueError) as exc:
             self.set_table_empty_state(
                 self.disk_table,
@@ -256,35 +294,38 @@ class StorageTab(BaseTab):
             self._fit_table_height(self.disk_table, max_visible_rows=3)
             self.append_output(f"Error listing disks: {exc}\n")
 
+    def _render_mounts(self, mounts: list) -> None:
+        self.mount_table.clearSpans()
+        self.mount_table.setRowCount(0)
+
+        if not mounts:
+            self.set_table_empty_state(
+                self.mount_table, self.tr("No mount points found")
+            )
+            self._fit_table_height(self.mount_table, max_visible_rows=3)
+            return
+
+        for mount in mounts:
+            row = self.mount_table.rowCount()
+            self.mount_table.insertRow(row)
+            self.mount_table.setItem(row, 0, self.make_table_item(mount.source))
+            self.mount_table.setItem(row, 1, self.make_table_item(mount.target))
+            self.mount_table.setItem(row, 2, self.make_table_item(mount.fstype))
+            self.mount_table.setItem(row, 3, self.make_table_item(mount.size))
+            self.mount_table.setItem(row, 4, self.make_table_item(mount.used))
+            self.mount_table.setItem(
+                row, 5, self.make_table_item(mount.use_percent)
+            )
+        normalize = getattr(BaseTab, "ensure_table_row_heights", None)
+        if callable(normalize):
+            normalize(self.mount_table)
+        self._fit_table_height(self.mount_table, max_visible_rows=3)
+
     def _refresh_mounts(self):
         """Refresh mount point table."""
         try:
             mounts = StorageManager.list_mounts()
-            self.mount_table.clearSpans()
-            self.mount_table.setRowCount(0)
-
-            if not mounts:
-                self.set_table_empty_state(
-                    self.mount_table, self.tr("No mount points found")
-                )
-                self._fit_table_height(self.mount_table, max_visible_rows=3)
-                return
-
-            for mount in mounts:
-                row = self.mount_table.rowCount()
-                self.mount_table.insertRow(row)
-                self.mount_table.setItem(row, 0, self.make_table_item(mount.source))
-                self.mount_table.setItem(row, 1, self.make_table_item(mount.target))
-                self.mount_table.setItem(row, 2, self.make_table_item(mount.fstype))
-                self.mount_table.setItem(row, 3, self.make_table_item(mount.size))
-                self.mount_table.setItem(row, 4, self.make_table_item(mount.used))
-                self.mount_table.setItem(
-                    row, 5, self.make_table_item(mount.use_percent)
-                )
-            normalize = getattr(BaseTab, "ensure_table_row_heights", None)
-            if callable(normalize):
-                normalize(self.mount_table)
-            self._fit_table_height(self.mount_table, max_visible_rows=3)
+            self._render_mounts(mounts)
         except (RuntimeError, OSError, ValueError) as exc:
             self.set_table_empty_state(
                 self.mount_table,
@@ -364,9 +405,11 @@ class StorageTab(BaseTab):
             self,
             self.tr("Filesystem Check"),
             self.tr(
-                f"Running read-only check on {device} ({target}).\n"
+                "Running read-only check on %1 (%2).\n"
                 "For a full repair, unmount first."
-            ),
+            )
+            .replace("%1", device)
+            .replace("%2", target),
         )
 
         self.append_output(f"Checking {device}...\n")

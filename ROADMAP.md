@@ -1,5 +1,16 @@
 # Roadmap
 
+## Strategic Direction (Post-v36.1.0) — KDE Plasma & Fedora 45 Focus
+
+The strategic development roadmap prioritizes **KDE Plasma and Fedora 45** as the primary reference desktop and release target while maintaining Fedora 44 compatibility and strict Action Center verification guarantees:
+
+1. **Stage 1 — Stability, Security, Packaging & Release Sync (Active):** Fix `.copr/Makefile` helper staging, harden `QScrollArea` page transitions under active AT-SPI without disabling accessibility, close legacy `pkexec bash -c` / `/tmp` service / preset traversal bypasses, fix `TweaksPage.showEvent()` redundant refresh, align metadata (`SECURITY.md`, `metainfo.xml`, `wiki/`), and archive pre-epoch tags (`v37.0.0`–`v50.0.0` → `legacy/pre-epoch-*`) before the next major release.
+2. **Stage 2 — Cohesive UX & Non-Blocking Interface:** Move synchronous `Tools` probes (`System`, `Storage`, `Network`, `Security`, `Logs`) off the Qt main thread, streamline `Overview` into a 3-zone task layout, consolidate duplicate Flatpak update cards in `Updates`, simplify `Activity` before/after evidence, and standardize on `ReviewedActionDialog` while keeping the UI strictly English with clean `tr()` literals.
+3. **Stage 3 — Core Feature Integration:** Rebuild **My Fedora configuration (Blueprint)** with `ui/components` and inline target mapping inside the unified `Tweaks -> Profiles` & `Overview` workflow; fix `HealthScoreManager`, `HardwareProfiles`, and `AnsibleExporter` heuristics.
+4. **Stage 4 — Architectural Simplification ("Delete over hide"):** Retire the 10 unreferenced UI files, `core/profiles/`, `services/ipc/daemon_client.py`, and legacy `utils/` shims; relocate `core/workers/` to `ui/workers/` for a 100% Qt-free `core/` and `services/`; consolidate disk state into `StateInventory`.
+5. **Stage 5 — Selective KDE Plasma 6 & Fedora 45 Enhancements:** Promote Fedora 45 to `supported_stable_releases` in `FEDORA_RELEASE_POLICY` upon qualification, deepen verifiable KDE Plasma 6 settings, and integrate pre/post-upgrade Blueprint comparison.
+6. **Stage 6 — Real Desktop E2E Qualification:** Replace mocked/CLI shortcuts in `e2e/tests/` with real AT-SPI GUI workflows on a clean Fedora 45 KDE Plasma VM.
+
 ## v36.1.0 Blueprint — active candidate
 
 The implementation candidate centers on **My Fedora configuration**: save

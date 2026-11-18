@@ -12,8 +12,9 @@ srpm:
 	trap 'rm -rf "$$BUILD_DIR"' EXIT; \
 	mkdir -p "$$BUILD_DIR/rpmbuild"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}; \
 	STAGE="$$BUILD_DIR/temp_build/$(NAME)-$(VERSION)"; \
-	mkdir -p "$$STAGE/$(NAME)"; \
+	mkdir -p "$$STAGE/$(NAME)" "$$STAGE/scripts"; \
 	cp -r loofi-fedora-tweaks/* "$$STAGE/$(NAME)/"; \
+	cp scripts/loofi-flatpak-maintenance scripts/loofi-rpm-transaction scripts/loofi-setup-sources "$$STAGE/scripts/"; \
 	cp $(NAME).desktop "$$STAGE/"; \
 	cp $(NAME).metainfo.xml "$$STAGE/"; \
 	cp LICENSE "$$STAGE/"; \

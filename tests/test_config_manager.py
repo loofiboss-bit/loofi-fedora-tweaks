@@ -260,6 +260,33 @@ class TestImportAll(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertIn("No settings changed", result.message)
 
+    def test_import_all_rejects_preset_path_traversal(self):
+        """import_all rejects unsafe preset names that attempt path traversal."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            original_config = ConfigManager.CONFIG_DIR
+            original_presets = ConfigManager.PRESETS_DIR
+            try:
+                ConfigManager.CONFIG_DIR = Path(tmpdir)
+                ConfigManager.PRESETS_DIR = Path(tmpdir) / "presets"
+                ConfigManager.ensure_dirs()
+                result = ConfigManager.import_all(
+                    {
+                        "version": "5.5.0",
+                        "settings": {},
+                        "presets": [
+                            {"name": "../../escaped", "values": {}},
+                            {"name": "My Safe Preset", "values": {"k": 1}},
+                        ],
+                    }
+                )
+                self.assertTrue(result.success)
+                self.assertIn("Errors: Preset: ../../escaped", result.message)
+                self.assertFalse((Path(tmpdir) / "escaped.json").exists())
+                self.assertTrue((ConfigManager.PRESETS_DIR / "my_safe_preset.json").is_file())
+            finally:
+                ConfigManager.CONFIG_DIR = original_config
+                ConfigManager.PRESETS_DIR = original_presets
+
 
 # ---------------------------------------------------------------------------
 # TestSaveAndLoadConfig — runtime config persistence

@@ -148,6 +148,23 @@ class EverydayKeyboardWorkflows(unittest.TestCase):
         self.assertTrue(page.profile_library_view.isVisible())
         self.assertEqual(len(library), 1)
 
+    @patch("ui.tweaks_page.SettingsManager.instance")
+    def test_tweaks_reentry_does_not_repeat_initial_show_refresh(self, settings):
+        settings.return_value.get.return_value = []
+        profile = SimpleNamespace(is_fedora=True, desktop=SimpleNamespace(value="kde"),
+                                  deployment_backend=SimpleNamespace(value="dnf5"))
+        page = TweaksPage(profile)
+        refreshed = QSignalSpy(page.refreshRequested)
+        self.show(page)
+        for _ in range(5):
+            self.app.processEvents()
+        self.assertEqual(len(refreshed), 1)
+        page.hide()
+        page.show()
+        for _ in range(5):
+            self.app.processEvents()
+        self.assertEqual(len(refreshed), 1)
+
     def test_review_keyboard_acceptance_requires_acknowledgment_then_explicit_space(self):
         dialog = self.show(ReviewedActionDialog(
             "Fixture", "Review", "Exact scope", "No automatic rollback", require_no_rollback_acceptance=True))

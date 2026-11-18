@@ -6,7 +6,7 @@ from core.actions.recovery_presentation import recovery_presentation
 
 import math
 from collections.abc import Iterable, Mapping
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -238,6 +238,14 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.until_input = QLineEdit()
         self.until_input.setObjectName("activityUntilFilter")
         self.until_input.setPlaceholderText(self.tr("Until date (YYYY-MM-DD)"))
+        self.date_range_preset = QComboBox()
+        self.date_range_preset.setObjectName("activityDateRangePreset")
+        self.date_range_preset.setAccessibleName(self.tr("Quick date range"))
+        self.date_range_preset.addItem(self.tr("Custom / all dates"), "")
+        self.date_range_preset.addItem(self.tr("Last 24 hours"), "1d")
+        self.date_range_preset.addItem(self.tr("Last 7 days"), "7d")
+        self.date_range_preset.addItem(self.tr("Last 30 days"), "30d")
+        self.date_range_preset.currentIndexChanged.connect(self._apply_date_range_preset)
         filter_row.addWidget(self.search_input, 0, 1, 1, 2)
         self.activity_view_filter.currentIndexChanged.connect(self._filters_changed)
         self.source_filter.currentIndexChanged.connect(self._filters_changed)
@@ -249,7 +257,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.scaffold.add_layout(filter_row)
         advanced_content = QWidget(self)
         advanced_layout = QGridLayout(advanced_content)
-        for index, widget in enumerate((self.source_filter, self.status_filter, self.reboot_filter, self.since_input, self.until_input)):
+        for index, widget in enumerate((self.source_filter, self.status_filter, self.reboot_filter, self.date_range_preset, self.since_input, self.until_input)):
             advanced_layout.addWidget(widget, index // 3, index % 3)
         self.advanced_filters = DetailsDisclosure(summary=self.tr("Advanced filters"), parent=self)
         self.advanced_filters.add_widget(advanced_content)
@@ -803,12 +811,41 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         ]
         return self.tr("Source availability: %1").replace("%1", "; ".join(statuses))
 
-    @staticmethod
-    def _facts_text(value: object) -> str:
+    def _apply_date_range_preset(self) -> None:
+        """Populate the since filter from a quick date range selection."""
+        preset = str(self.date_range_preset.currentData() or "")
+        days_map = {"1d": 1, "7d": 7, "30d": 30}
+        days = days_map.get(preset)
+        if days is None:
+            self.since_input.clear()
+            return
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+        self.since_input.setText(since)
+
+    @classmethod
+    def _format_fact_value(cls, item: object) -> str:
+        if isinstance(item, bool):
+            return "yes" if item else "no"
+        if isinstance(item, (list, tuple)):
+            return ", ".join(cls._format_fact_value(part) for part in item[:8])
+        if isinstance(item, Mapping):
+            parts = [
+                f"{str(k).replace('_', ' ')}: {cls._format_fact_value(v)}"
+                for k, v in list(item.items())[:6]
+            ]
+            return ", ".join(parts)
+        return str(item)
+
+    @classmethod
+    def _facts_text(cls, value: object) -> str:
         if not value:
             return "Not recorded"
         if isinstance(value, Mapping):
-            return "; ".join(f"{key}={item}" for key, item in list(value.items())[:12])
+            lines = [
+                f"{str(key).replace('_', ' ')}: {cls._format_fact_value(item)}"
+                for key, item in list(value.items())[:12]
+            ]
+            return " · ".join(lines)
         return str(value)[:600]
 
     def _export_selected(self, format_name: str) -> None:

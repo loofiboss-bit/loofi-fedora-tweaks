@@ -19,11 +19,15 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
     def setUp(self):
         self.mgr = BatteryManager()
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_success_80(self, mock_makedirs, mock_file, mock_run):
+    def test_set_limit_success_80(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
         """Setting limit to 80% succeeds through all steps and writes correct files."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
         cmd, args = self.mgr.set_limit(80)
         self.assertEqual(cmd, "echo")
@@ -31,41 +35,55 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         # 4 subprocess calls: mv, daemon-reload, enable, tee
         self.assertEqual(mock_run.call_count, 4)
 
-        # Check file calls (config and systemd unit)
+        # Check config file and private temporary unit file calls
         mock_file.assert_any_call(BatteryManager.CONFIG_PATH, "w")
-        mock_file.assert_any_call("/tmp/loofi-battery.service", "w")
+        mock_named_tmp.assert_called_once()
+        self.assertFalse(mock_named_tmp.call_args.kwargs.get("delete", True))
 
-        handle = mock_file()
-        written = "".join(call.args[0] for call in handle.write.call_args_list)
+        written = "".join(call.args[0] for call in tmp_handle.write.call_args_list)
         self.assertIn("80", written)
         self.assertIn("ConditionPathExists=", written)
         self.assertIn("Restore Battery Charge Limit (80%)", written)
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_success_100(self, mock_makedirs, mock_file, mock_run):
+    def test_set_limit_success_100(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
         """Setting limit to 100% succeeds."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
         cmd, args = self.mgr.set_limit(100)
         self.assertEqual(cmd, "echo")
         self.assertIn("100%", args[0])
 
+    @patch('services.hardware.battery.os.unlink')
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_mv_failure(self, mock_makedirs, mock_file, mock_run):
-        """Failure to move service file returns None."""
+    def test_set_limit_mv_failure(self, mock_makedirs, mock_file, mock_run, mock_named_tmp, mock_unlink):
+        """Failure to move service file returns None and unlinks temp file."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.return_value = MagicMock(returncode=1, stderr='Permission denied')
         cmd, args = self.mgr.set_limit(80)
         self.assertIsNone(cmd)
         self.assertIsNone(args)
+        mock_unlink.assert_called_once_with("/tmp/loofi-battery-test.service")
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_daemon_reload_failure(self, mock_makedirs, mock_file, mock_run):
+    def test_set_limit_daemon_reload_failure(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
         """Failure on daemon-reload returns None."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.side_effect = [
             MagicMock(returncode=0),  # mv succeeds
             MagicMock(returncode=1, stderr='reload failed'),  # daemon-reload fails
@@ -74,11 +92,15 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         self.assertIsNone(cmd)
         self.assertIsNone(args)
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_enable_failure(self, mock_makedirs, mock_file, mock_run):
+    def test_set_limit_enable_failure(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
         """Failure on systemctl enable returns None."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.side_effect = [
             MagicMock(returncode=0),  # mv succeeds
             MagicMock(returncode=0),  # daemon-reload succeeds
@@ -88,11 +110,15 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         self.assertIsNone(cmd)
         self.assertIsNone(args)
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_tee_failure_returns_reboot_msg(self, mock_makedirs, mock_file, mock_run):
+    def test_set_limit_tee_failure_returns_reboot_msg(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
         """Failure on sysfs tee returns reboot message instead of None."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.side_effect = [
             MagicMock(returncode=0),  # mv
             MagicMock(returncode=0),  # daemon-reload
@@ -103,62 +129,73 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         self.assertEqual(cmd, "echo")
         self.assertIn("reboot", args[0].lower())
 
+    @patch('services.hardware.battery.os.unlink')
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_subprocess_error(self, mock_makedirs, mock_file, mock_run):
-        """SubprocessError during execution returns None."""
+    def test_set_limit_subprocess_error(self, mock_makedirs, mock_file, mock_run, mock_named_tmp, mock_unlink):
+        """SubprocessError during execution returns None and unlinks temp file."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.side_effect = subprocess.SubprocessError("command failed")
         cmd, args = self.mgr.set_limit(80)
         self.assertIsNone(cmd)
         self.assertIsNone(args)
+        mock_unlink.assert_called_once_with("/tmp/loofi-battery-test.service")
 
+    @patch('services.hardware.battery.os.unlink')
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_os_error(self, mock_makedirs, mock_file, mock_run):
-        """OSError during execution returns None."""
+    def test_set_limit_os_error(self, mock_makedirs, mock_file, mock_run, mock_named_tmp, mock_unlink):
+        """OSError during execution returns None and unlinks temp file."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.side_effect = OSError("disk error")
         cmd, args = self.mgr.set_limit(80)
         self.assertIsNone(cmd)
         self.assertIsNone(args)
+        mock_unlink.assert_called_once_with("/tmp/loofi-battery-test.service")
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open')
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_config_write_failure_continues(self, mock_makedirs, mock_file, mock_run):
+    def test_set_limit_config_write_failure_continues(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
         """Config write failure logs but continues to service setup."""
-        tmp_handle = mock_open()()
-        mock_file.side_effect = [
-            IOError("cannot write config"),  # config write fails
-            tmp_handle,                       # tmp service file write succeeds
-        ]
+        mock_file.side_effect = IOError("cannot write config")
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
         cmd, args = self.mgr.set_limit(80)
         self.assertEqual(cmd, "echo")
         self.assertIn("80%", args[0])
         self.assertEqual(mock_run.call_count, 4)
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile', side_effect=OSError("cannot write tmp"))
     @patch('services.hardware.battery.subprocess.run')
-    @patch('builtins.open')
+    @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_tmp_service_write_failure(self, mock_makedirs, mock_file, mock_run):
-        """Failure writing /tmp/loofi-battery.service returns None."""
-        mock_file.side_effect = [
-            mock_open()(),                 # config write succeeds
-            OSError("cannot write tmp"),   # tmp service write fails
-        ]
+    def test_set_limit_tmp_service_write_failure(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
+        """Failure creating private temporary service file returns None."""
         cmd, args = self.mgr.set_limit(80)
         self.assertIsNone(cmd)
         self.assertIsNone(args)
         mock_run.assert_not_called()
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('services.hardware.battery.os.makedirs', side_effect=OSError("no dir"))
-    def test_set_limit_makedirs_failure_continues(self, mock_makedirs, mock_run):
+    def test_set_limit_makedirs_failure_continues(self, mock_makedirs, mock_run, mock_named_tmp):
         """makedirs failure is caught and execution continues."""
-        # makedirs fails but is caught, then open is called which will
-        # also need to be mocked
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.return_value = MagicMock(returncode=0)
         with patch('builtins.open', mock_open()):
             cmd, args = self.mgr.set_limit(80)
@@ -282,11 +319,15 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         self.assertIsNone(args)
         mock_execute.assert_called_once()
 
+    @patch('services.hardware.battery.tempfile.NamedTemporaryFile')
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
-    def test_set_limit_subprocess_calls_have_timeout(self, mock_makedirs, mock_file, mock_run):
+    def test_set_limit_subprocess_calls_have_timeout(self, mock_makedirs, mock_file, mock_run, mock_named_tmp):
         """All subprocess calls include timeout parameter."""
+        tmp_handle = MagicMock()
+        tmp_handle.name = "/tmp/loofi-battery-test.service"
+        mock_named_tmp.return_value.__enter__.return_value = tmp_handle
         mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
         self.mgr.set_limit(80)
         for c in mock_run.call_args_list:

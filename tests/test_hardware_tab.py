@@ -66,3 +66,16 @@ def test_mutating_requests_are_emitted_for_action_center_review() -> None:
         "enroll-fingerprint",
     ]
     tab.deleteLater()
+
+
+def test_activation_avoids_recurring_timer_and_refresh_button_triggers_probe() -> None:
+    tab = _tab()
+    tab.on_activate()
+    assert not tab.refresh_timer.isActive()
+    with patch(
+        "ui.hardware_tab.BluetoothManager.get_adapter_status",
+        return_value=BluetoothStatus(powered=True, adapter_name="hci0"),
+    ), patch("ui.hardware_tab.BluetoothManager.list_devices", return_value=[]):
+        tab.btn_refresh_bt.click()
+    assert "hci0" in tab.lbl_bt_status.text()
+    tab.deleteLater()

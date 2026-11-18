@@ -13,6 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
+from core.state.atomic_io import atomic_write_text
 from services.system import SystemManager
 from services.system.system import cached_which
 from utils.log import get_logger
@@ -270,8 +271,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
 
         try:
             content = cls.generate_kickstart(**kwargs)
-            with open(path, "w") as f:
-                f.write(content)
+            atomic_write_text(path, content, keep_backup=False)
 
             return Result(
                 True,

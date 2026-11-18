@@ -45,6 +45,23 @@ class TestReleaseTargets:
         assert target.preview is True
         assert target.fedora_version == "45"
 
+    def test_fedora45_qualified_policy_and_stable_target(self):
+        from core.fedora_release_policy import FedoraReleasePolicy
+
+        qualified = FedoraReleasePolicy.fedora45_qualified()
+        assert qualified.stable_release == "45"
+        assert qualified.preview_release == "46"
+        assert qualified.supported_stable_releases == ("44", "45")
+        assert qualified.classify_host("45") == "supported"
+
+        target = ReleaseReadiness.get_target("45")
+        assert target.key == "45"
+        assert target.supported is True
+        assert target.preview is False
+        assert target.fedora_version == "45"
+        assert target.min_plasma == (6, 2)
+        assert target.min_qt == (6, 8)
+
 
 class TestFedoraVersionCheck:
     """Verify version matching and out-of-target behavior."""

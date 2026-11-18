@@ -62,6 +62,14 @@ class CareNavigationMixin:
                         if callable(focus):
                             focus(tweak_id)
                 return
+        if route_id in {"tune", "tweaks"} and isinstance(_preselection, dict) and _preselection == {"section": "profiles"}:
+            if self.switch_to_route("tune"):
+                entry = self._sidebar_index.get("utility_tune")
+                if entry is not None:
+                    focus_task = getattr(self._real_widget_for_entry(entry), "focus_task", None)
+                    if callable(focus_task):
+                        focus_task("profile-library")
+            return
         if route_id == "software:apps" and isinstance(_preselection, dict) and _preselection.get("section") == "unused-runtimes":
             self._open_apps_unused_runtimes(_preselection)
             return

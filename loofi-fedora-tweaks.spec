@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        36.1.0
+Version:        36.2.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -13,7 +13,6 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-defusedxml
 BuildRequires:  desktop-file-utils
 BuildRequires:  libappstream-glib
-BuildRequires:  systemd-rpm-macros
 
 Requires:       python3
 Requires:       python3-pyqt6
@@ -117,6 +116,12 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Wed Nov 18 2026 Loofi <loofi@example.com> - 36.2.0-1
+- Blueprint 36.2.0: Fedora 45 and KDE Plasma 6 enhancements, Qt/AT-SPI scroll stabilization, unified UX and Blueprint diffs, and core architecture consolidation.
+
+* Sat Oct 24 2026 Loofi <loofi@example.com> - 36.1.0-1
+- Blueprint: portable My Fedora configuration setups, RPM details, and profile search.
+
 * Sun Oct 18 2026 Loofi <loofi@example.com> - 35.0.0-1
 - Everyday candidate: reviewed application transactions, optional source setup, and explicit recovery.
 - Record the corrected Qt probe and remaining native desktop qualification limits.

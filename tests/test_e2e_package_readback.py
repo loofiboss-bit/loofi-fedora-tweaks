@@ -5,12 +5,13 @@ import importlib.util
 from pathlib import Path
 import subprocess
 import sys
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 import unittest
 from unittest.mock import Mock, mock_open, patch
 
 
 MODULE_NAME = "loofi_e2e_package_fixture"
+HELPERS_MODULE_NAME = "loofi_e2e_helpers"
 
 
 class TestGuestPackageReadback(unittest.TestCase):
@@ -69,3 +70,68 @@ class TestGuestPackageReadback(unittest.TestCase):
         command = popen.call_args.args[0]
         self.assertEqual(command[:4], ["pkexec", "/usr/bin/dnf5", "--cacheonly", "--assumeyes"])
         auth.assert_called_once()
+
+
+class TestPolkitHelperContract(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        selenium_mod = ModuleType("selenium")
+        webdriver_mod = ModuleType("selenium.webdriver")
+        common_mod = ModuleType("selenium.webdriver.common")
+        by_mod = ModuleType("selenium.webdriver.common.by")
+        by_mod.By = SimpleNamespace(XPATH="xpath")
+        path = Path(__file__).resolve().parents[1] / "e2e/tests/helpers.py"
+        spec = importlib.util.spec_from_file_location(HELPERS_MODULE_NAME, path)
+        cls.helpers = importlib.util.module_from_spec(spec)
+        sys.modules[HELPERS_MODULE_NAME] = cls.helpers
+        with patch.dict(
+            sys.modules,
+            {
+                "selenium": selenium_mod,
+                "selenium.webdriver": webdriver_mod,
+                "selenium.webdriver.common": common_mod,
+                "selenium.webdriver.common.by": by_mod,
+            },
+        ):
+            spec.loader.exec_module(cls.helpers)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        sys.modules.pop(HELPERS_MODULE_NAME, None)
+
+    def test_polkit_helper_waits_for_a_delayed_password_prompt(self) -> None:
+        password_field = Mock()
+        wait_for_password = Mock(side_effect=[AssertionError("not ready"), AssertionError("not ready"), password_field])
+        completion = Mock(return_value=False)
+        pyatspi = ModuleType("pyatspi")
+        keyboard_event = Mock()
+        pyatspi.Registry = SimpleNamespace(generateKeyboardEvent=keyboard_event)
+        pyatspi.KEY_SYM = 1
+
+        with (
+            patch.object(self.helpers, "wait_for_polkit_password", side_effect=wait_for_password),
+            patch.object(self.helpers, "_driver", Mock()),
+            patch.object(self.helpers.Accessible, "click"),
+            patch.object(self.helpers.Path, "read_text", return_value='{"password":"x"}'),
+            patch.object(self.helpers.time, "sleep"),
+            patch.dict(
+                "os.environ",
+                {"LOOFI_E2E_CREDENTIALS_PATH": "/tmp/loofi-e2e-credentials.json", "XDG_SESSION_TYPE": "x11"},
+            ),
+            patch.dict("sys.modules", {"pyatspi": pyatspi}),
+        ):
+            self.helpers.authenticate_polkit(completed=completion, timeout=5)
+
+        self.assertEqual(wait_for_password.call_count, 3)
+        self.assertEqual(completion.call_count, 2)
+        keyboard_event.assert_called_once_with(ord("x"), None, pyatspi.KEY_SYM)
+
+    def test_polkit_helper_accepts_cached_authorization_only_after_readback(self) -> None:
+        wait_for_password = Mock(side_effect=AssertionError("prompt is cached"))
+        completion = Mock(side_effect=[False, False, True])
+
+        with patch.object(self.helpers, "wait_for_polkit_password", side_effect=wait_for_password):
+            self.helpers.authenticate_polkit(completed=completion, timeout=5)
+
+        self.assertEqual(wait_for_password.call_count, 3)
+        self.assertEqual(completion.call_count, 3)

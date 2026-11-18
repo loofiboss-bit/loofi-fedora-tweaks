@@ -136,6 +136,12 @@ class TestGlobalSearchDialog(unittest.TestCase):
 
         self.assertIsInstance(palette, GlobalSearchDialog)
 
+    def test_dialog_uses_modal_dialog_flags_without_popup(self):
+        dialog = GlobalSearchDialog(self._model(), MagicMock())
+        self.addCleanup(dialog.close)
+        self.assertTrue(dialog.isModal())
+        self.assertEqual(dialog.windowFlags() & Qt.WindowType.WindowType_Mask, Qt.WindowType.Dialog)
+
 
 if __name__ == "__main__":
     unittest.main()

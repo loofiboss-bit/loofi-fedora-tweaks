@@ -1,5 +1,12 @@
 # Changelog
 
+## [36.2.0] - 2026-11-18 - "Blueprint"
+
+- **Stability & Packaging:** Stabilize Qt/AT-SPI scroll area ownership across control center pages (`owns_scroll = True`), remove the `.copr/Makefile` `%check` bypass so COPR builds run tests cleanly, and align Fedora 44/45 release and documentation metadata.
+- **UX & Core Integration:** Refactor Overview to be task-oriented with a collapsible hardware monitor, add current-vs-target comparison and searchable profile selection in Tweaks, add side-by-side Blueprint comparison and quick actions in My Fedora configuration, surface inline recovery banners in Activity, and connect Health, Updates, Tweaks, and Activity workflows with shared contextual links.
+- **Architecture Consolidation:** Retire orphaned `core/profiles/*`, `ui/logs_tab.py`, `ui/performance_tab.py`, `cli/action_plans.py`, and `core/diagnostics/gaming_audit.py` compatibility modules; decompose oversized modules (`services/hardware/hardware.py`, `ui/main_window_shell.py`, `ui/main_window_utility.py`) below size budgets; and cache static OS/CPU reads.
+- **KDE Plasma 6 & Fedora 45:** Add the qualified Fedora 45 release policy (`FedoraReleasePolicy.fedora45_qualified()`), register KDE Touchpad Natural Scroll (`kde-touchpad-natural-scroll`) and Dolphin Browse Through Archives (`kde-dolphin-browse-archives`) across 84 cataloged controls, connect pre/post-upgrade Blueprint links in Updates, and add `--fedora-release {44,45}` support to the VM E2E orchestrator.
+
 ## [36.1.0] - Unreleased - "Blueprint"
 
 - Add **My Fedora configuration** for named, data-only `loofi.setup/v1` app and tweak intents, import preview, export, timestamped comparison, and local progress that requires a fresh review after interruption.

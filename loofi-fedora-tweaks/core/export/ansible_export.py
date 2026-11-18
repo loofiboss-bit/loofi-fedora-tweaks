@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+from core.state.atomic_io import atomic_write_text
 from services.system import SystemManager
 from services.system.system import cached_which
 from utils.log import get_logger
@@ -39,6 +40,7 @@ class PlaybookOptions:
     include_settings: bool = True
     include_repos: bool = True
     playbook_name: str = "Loofi Fedora Configuration"
+    package_limit: int = 100
 
 
 class AnsibleExporter:
@@ -216,6 +218,7 @@ class AnsibleExporter:
                 include_settings=kwargs.get("include_settings", True),
                 include_repos=kwargs.get("include_repos", True),
                 playbook_name=kwargs.get("playbook_name", "Loofi Fedora Configuration"),
+                package_limit=kwargs.get("package_limit", 100),
             )
         elif kwargs:
             options = PlaybookOptions(
@@ -224,6 +227,7 @@ class AnsibleExporter:
                 include_settings=kwargs.get("include_settings", options.include_settings),
                 include_repos=kwargs.get("include_repos", options.include_repos),
                 playbook_name=kwargs.get("playbook_name", options.playbook_name),
+                package_limit=kwargs.get("package_limit", options.package_limit),
             )
 
         tasks = []
@@ -253,7 +257,9 @@ class AnsibleExporter:
         if options.include_packages:
             packages = cls._get_installed_packages()
             if packages:
-                vars_section["user_packages"] = packages[:100]
+                vars_section["user_packages"] = (
+                    packages[: options.package_limit] if options.package_limit > 0 else packages
+                )
                 tasks.append(
                     {
                         "name": "Install user packages",
@@ -309,7 +315,9 @@ class AnsibleExporter:
                     )
 
         if options.include_repos:
-            cls._get_enabled_repos()
+            repos = cls._get_enabled_repos()
+            if repos:
+                vars_section["enabled_repos"] = repos
 
         playbook = [
             {
@@ -364,8 +372,7 @@ class AnsibleExporter:
 
         try:
             content = cls.generate_playbook(options=options, **kwargs)
-            with open(path, "w") as f:
-                f.write(content)
+            atomic_write_text(path, content, keep_backup=False)
 
             readme_path = path.parent / "README.md"
             readme = f"""# Loofi Fedora Configuration Playbook
@@ -395,8 +402,7 @@ ansible-playbook site.yml --ask-become-pass
 
 Edit `site.yml` to add or remove packages, apps, or settings before running.
 """
-            with open(readme_path, "w") as f:
-                f.write(readme)
+            atomic_write_text(readme_path, readme, keep_backup=False)
 
             return Result(
                 True,

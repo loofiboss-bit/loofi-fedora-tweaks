@@ -328,36 +328,43 @@ class TestApplyMethods(unittest.TestCase):
         self.assertIsInstance(result[2], str)
 
     def test_apply_recommendation_uses_pkexec(self):
-        """Test apply_recommendation command starts with pkexec."""
+        """Test apply_recommendation command starts with pkexec without bash -c."""
         rec = TuningRecommendation(
             "performance", 10, "none", "never", "Gaming.", "gaming")
         cmd, args, desc = AutoTuner.apply_recommendation(rec)
         self.assertEqual(cmd, "pkexec")
-        self.assertIn("performance", " ".join(args))
+        self.assertEqual(args[0], "tee")
+        self.assertNotIn("bash", args)
+        self.assertNotIn("-c", args)
+        self.assertIn("performance", desc)
 
     def test_apply_io_scheduler(self):
-        """Test apply_io_scheduler returns proper tuple structure."""
+        """Test apply_io_scheduler returns shell-free tee tuple structure."""
         result = AutoTuner.apply_io_scheduler("mq-deadline", "sda")
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 3)
         cmd, args, desc = result
         self.assertEqual(cmd, "pkexec")
-        self.assertIn("mq-deadline", " ".join(args))
+        self.assertEqual(args, ["tee", "/sys/block/sda/queue/scheduler"])
+        self.assertIn("mq-deadline", desc)
         self.assertIn("sda", desc)
 
     def test_apply_thp(self):
-        """Test apply_thp returns proper tuple structure."""
+        """Test apply_thp returns shell-free tee tuple structure."""
         result = AutoTuner.apply_thp("madvise")
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 3)
         cmd, args, desc = result
         self.assertEqual(cmd, "pkexec")
-        self.assertIn("madvise", " ".join(args))
+        self.assertEqual(args, ["tee", "/sys/kernel/mm/transparent_hugepage/enabled"])
+        self.assertIn("madvise", desc)
 
     def test_apply_thp_invalid_mode_defaults_madvise(self):
         """Test apply_thp defaults to madvise for invalid mode."""
         cmd, args, desc = AutoTuner.apply_thp("bogus")
-        self.assertIn("madvise", " ".join(args))
+        self.assertEqual(cmd, "pkexec")
+        self.assertEqual(args, ["tee", "/sys/kernel/mm/transparent_hugepage/enabled"])
+        self.assertIn("madvise", desc)
 
     def test_apply_swappiness_clamps_value(self):
         """Test apply_swappiness clamps value within 0-200 range."""

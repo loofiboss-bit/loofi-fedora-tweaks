@@ -522,3 +522,39 @@ def test_reboot_records_changed_kernel_boot_and_protects_credentials(tmp_path: P
     run.assert_not_called()
     assert execute.call_args_list[1].args == ("/usr/bin/python3", ["/var/tmp/loofi-e2e/runner.py", "--activate-offline"])
     assert "os.chmod(f,0o600)" in execute.call_args.args[1][1]
+
+
+def test_fedora45_vm_release_option_isolates_state_and_rejects_invalid_release(tmp_path: Path) -> None:
+    with pytest.raises(VMError, match="Unsupported Fedora E2E release"):
+        FedoraE2E(tmp_path, fedora_release="43")
+
+    vm = FedoraE2E(tmp_path, fedora_release="45")
+    vm.state_path.write_text(
+        json.dumps(
+            {
+                "name": VM_NAME,
+                "uri": LIBVIRT_URI,
+                "fedora_release": FEDORA_RELEASE,
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "provisioned": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(VMError, match="different domain"):
+        vm._load_state()
+
+    with patch("e2e.vm._qt_runtime_payload", return_value=({}, b"", b"")):
+        vm_f45 = FedoraE2E(
+            tmp_path / "kickstart",
+            fedora_release="45",
+            qt_runtime_manifest=tmp_path / "qt-manifest.json",
+        )
+    assert "updates-released-f45" in vm_f45._kickstart("$6$test-hash")
+
+
+def test_e2e_guest_workflows_do_not_mix_mocked_unit_tests() -> None:
+    workflows = (ROOT / "e2e" / "tests" / "test_fedora_kde_workflows.py").read_text(encoding="utf-8")
+    blueprint = (ROOT / "e2e" / "tests" / "test_00_setup_blueprint.py").read_text(encoding="utf-8")
+    assert "unittest.mock" not in workflows
+    assert '"QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "1"' in blueprint

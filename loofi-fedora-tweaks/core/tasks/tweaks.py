@@ -135,6 +135,8 @@ TWEAKS: tuple[Tweak, ...] = (
     Tweak("kde-dolphin-external-folders-new-tab", "Open external folders in a new tab", "Use a new Dolphin tab for folders opened by other applications.", "Files", "kde", "set-kde-dolphin-external-folders-new-tab", (("true", "On"), ("false", "Off"))),
     Tweak("kde-dolphin-confirm-close-tabs", "Confirm closing multiple tabs", "Ask before closing a Dolphin window containing multiple tabs.", "Files", "kde", "set-kde-dolphin-confirm-close-tabs", (("true", "On"), ("false", "Off"))),
     Tweak("kde-edge-tiling", "Edge tiling", "Tile windows by dragging them to screen edges in Plasma.", "Windows", "kde", "set-kde-edge-tiling", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-touchpad-natural-scroll", "Touchpad natural scrolling", "Content follows your fingers on the touchpad in KDE Plasma.", "Input", "kde", "set-kde-touchpad-natural-scroll", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-dolphin-browse-archives", "Open archives as folders", "Browse inside archives directly in Dolphin instead of launching an external archive manager.", "Files", "kde", "set-kde-dolphin-browse-archives", (("true", "On"), ("false", "Off"))),
     Tweak("kde-focus-stealing-prevention", "Focus stealing prevention", "Limit how newly opened windows take keyboard focus.", "Windows", "kde", "set-kde-focus-stealing-prevention", (("0", "None"), ("1", "Low"), ("2", "Normal"), ("3", "High"), ("4", "Extreme"))),
     Tweak("gnome-files-editable-location", "Editable location bar", "Enter a folder path directly in GNOME Files.", "Files", "gnome", "set-gnome-files-editable-location", (("true", "On"), ("false", "Off"))),
     Tweak("gnome-files-date-format", "File date display", "Choose simple or detailed dates in GNOME Files.", "Files", "gnome", "set-gnome-files-date-format", (("simple", "Simple"), ("detailed", "Detailed"))),
@@ -156,6 +158,8 @@ _SEARCH_ALIASES: dict[str, tuple[str, ...]] = {
     "gnome-files-editable-location": ("file handling", "type folder path", "location bar", "address bar"),
     "kde-dolphin-remember-tabs": ("file handling", "reopen folders", "restore tabs", "file manager"),
     "kde-dolphin-external-folders-new-tab": ("file handling", "new tab", "external folders", "file manager"),
+    "kde-touchpad-natural-scroll": ("touchpad", "natural scroll", "reverse scroll"),
+    "kde-dolphin-browse-archives": ("archive", "zip", "tar", "browse archives", "file manager"),
 }
 
 

@@ -171,3 +171,31 @@ class FlatpakUpdatesPresentationTests(unittest.TestCase):
         self.assertTrue(CareNavigationMixin._open_apps_unused_runtimes(shell, {"section": "unused-runtimes", "installation": "named-games"}))
         self.assertEqual(insights.installation.currentText(), "named-games")
         insights.inspect_button.setFocus.assert_called_once()
+
+    def test_search_visibility_and_update_workflow_source_card_sync(self):
+        from ui.update_workflow import UpdateWorkflowPage
+
+        page = UpdateWorkflowPage(service=Mock())
+        self.addCleanup(page.close)
+        self.assertTrue(page.flatpak_updates.search.isHidden())
+
+        page.flatpak_updates.checkStarted.emit()
+        self.assertEqual(page.source_state("flatpak").status, "checking")
+
+        page.flatpak_updates.apply_snapshot(
+            dict(available=True, checked_at="2026-10-16T12:00:00Z", candidates=[candidate("user")])
+        )
+        self.assertFalse(page.flatpak_updates.search.isHidden())
+        self.assertEqual(page.source_state("flatpak").status, "available")
+        self.assertEqual(page.source_state("flatpak").item_count, 1)
+
+        page.flatpak_updates.apply_snapshot(
+            dict(available=True, checked_at="2026-10-16T12:05:00Z", candidates=[])
+        )
+        self.assertTrue(page.flatpak_updates.search.isHidden())
+        self.assertEqual(page.source_state("flatpak").status, "up_to_date")
+        self.assertEqual(page.source_state("flatpak").item_count, 0)
+
+        page.flatpak_updates._on_check_failed("Flatpak backend timed out")
+        self.assertEqual(page.source_state("flatpak").status, "error")
+        self.assertIn("timed out", page.source_state("flatpak").message)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, cast
 
 from core.tasks import UPDATE_SOURCES, UpdateOverviewState, UpdateSourceState, update_cta
@@ -75,6 +76,9 @@ class UpdateWorkflowPage(QWidget):
             self._add_source_card(source)
         from ui.flatpak_updates import FlatpakUpdatesCard
         self.flatpak_updates = FlatpakUpdatesCard(parent=self)
+        self.flatpak_updates.checkStarted.connect(self._on_flatpak_check_started)
+        self.flatpak_updates.snapshotApplied.connect(self._on_flatpak_snapshot)
+        self.flatpak_updates.checkFailed.connect(self._on_flatpak_check_failed)
         self.flatpak_updates.actionReviewRequested.connect(self.actionReviewRequested.emit)
         self.flatpak_updates.routeRequested.connect(self.contextRouteRequested.emit)
         self.flatpak_updates.stopped.connect(self._notify_stopped)
@@ -87,6 +91,7 @@ class UpdateWorkflowPage(QWidget):
         from ui.upgrade_preparation import UpgradePreparationCard
 
         self.preparation = UpgradePreparationCard(parent=self)
+        self.preparation.routeRequested.connect(self.contextRouteRequested.emit)
         self.preparation.stopped.connect(self._notify_stopped)
         self.scaffold.add_widget(self.preparation)
         self.scaffold.content_layout.addStretch()
@@ -242,6 +247,65 @@ class UpdateWorkflowPage(QWidget):
         self._check_worker = None
         self._checking_source = None
         self._notify_stopped()
+
+    def _on_flatpak_check_started(self) -> None:
+        current = self.source_state("flatpak")
+        self.set_source(
+            current.with_status(
+                "checking",
+                stale=True,
+                message=self.tr("Reading Flatpak installations without applying changes."),
+                metadata={**current.metadata, "recovery_required": False},
+            )
+        )
+
+    def _on_flatpak_snapshot(self, data: object) -> None:
+        if not isinstance(data, Mapping):
+            return
+        current = self.source_state("flatpak")
+        candidates = data.get("candidates", ())
+        candidate_list = list(candidates) if isinstance(candidates, (list, tuple)) else []
+        available = bool(data.get("available", False))
+        checked_at = str(data.get("checked_at", "") or "")
+        if candidate_list:
+            self.set_source(
+                current.with_status(
+                    "available",
+                    item_count=len(candidate_list),
+                    checked_at=checked_at or current.checked_at,
+                    stale=False,
+                    message=str(data.get("error") or ""),
+                )
+            )
+        elif available:
+            self.set_source(
+                current.with_status(
+                    "up_to_date",
+                    item_count=0,
+                    checked_at=checked_at or current.checked_at,
+                    stale=False,
+                    message="",
+                )
+            )
+        else:
+            self.set_source(
+                current.with_status(
+                    "error",
+                    stale=True,
+                    checked_at=checked_at or current.checked_at,
+                    message=str(data.get("error") or self.tr("Flatpak update discovery is unavailable.")),
+                )
+            )
+
+    def _on_flatpak_check_failed(self, message: str) -> None:
+        current = self.source_state("flatpak")
+        self.set_source(
+            current.with_status(
+                "error",
+                stale=True,
+                message=str(message) or self.tr("The Flatpak source check failed."),
+            )
+        )
 
     def apply_outcome(self, source: str, outcome: object) -> None:
         """Render a verified controller outcome back into its source card."""

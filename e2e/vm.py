@@ -269,11 +269,14 @@ def _qt_runtime_payload(manifest_path: Path) -> tuple[dict[str, Any], bytes, byt
 class FedoraE2E:
     """Own exactly one test VM in qemu:///session and its generated disks."""
 
-    def __init__(self, data_root: Path | None = None, reports_dir: Path | None = None, *, name: str = VM_NAME, desktop: str = "x11", reboot_check: bool = False, qt_runtime_manifest: Path | None = None):
+    def __init__(self, data_root: Path | None = None, reports_dir: Path | None = None, *, name: str = VM_NAME, desktop: str = "x11", reboot_check: bool = False, qt_runtime_manifest: Path | None = None, fedora_release: str = FEDORA_RELEASE):
         if not re.fullmatch(r"loofi-fedora-tweaks-e2e(?:-[a-z0-9-]+)?", name) or desktop not in {"x11", "wayland"}:
             raise VMError("Invalid dedicated E2E VM name or desktop.")
+        if fedora_release not in {"44", "45"}:
+            raise VMError("Unsupported Fedora E2E release.")
         self.name = name
         self.desktop = desktop
+        self.fedora_release = fedora_release
         self.reboot_check = reboot_check
         self.qt_runtime_manifest = qt_runtime_manifest
         self._qt_runtime = _qt_runtime_payload(qt_runtime_manifest) if qt_runtime_manifest else None
@@ -432,7 +435,7 @@ class FedoraE2E:
             state.get("name") != self.name
             or state.get("desktop", "x11") != self.desktop
             or state.get("uri") != LIBVIRT_URI
-            or state.get("fedora_release") != FEDORA_RELEASE
+            or state.get("fedora_release") != self.fedora_release
             or not isinstance(state.get("uuid"), str)
             or not isinstance(state.get("provisioned"), bool)
         ):
@@ -485,7 +488,7 @@ class FedoraE2E:
                 state.get("name") != self.name
                 or state.get("desktop", "x11") != self.desktop
                 or state.get("uri") != LIBVIRT_URI
-                or state.get("fedora_release") != FEDORA_RELEASE
+                or state.get("fedora_release") != self.fedora_release
                 or not isinstance(state.get("provisioned"), bool)
             ):
                 raise VMError("The saved VM state belongs to a different domain or libvirt connection; refusing to change it.")
@@ -505,7 +508,7 @@ class FedoraE2E:
             "desktop": self.desktop,
             "uri": LIBVIRT_URI,
             "uuid": str(uuid.uuid4()),
-            "fedora_release": FEDORA_RELEASE,
+            "fedora_release": self.fedora_release,
             "provisioned": False,
         }
         self._save_state()
@@ -616,7 +619,7 @@ class FedoraE2E:
 
     def _kickstart(self, password_hash: str) -> str:
         updates_repository = (
-            f'repo --name=loofi-e2e-fedora-updates --metalink="https://mirrors.fedoraproject.org/metalink?repo=updates-released-f{FEDORA_RELEASE}&arch=x86_64"\n'
+            f'repo --name=loofi-e2e-fedora-updates --metalink="https://mirrors.fedoraproject.org/metalink?repo=updates-released-f{self.fedora_release}&arch=x86_64"\n'
             if self.qt_runtime_manifest is not None else ""
         )
         wayland_packages = ""
@@ -755,7 +758,7 @@ reboot
         ks_file = self.data_root / "ks.cfg"
         ks_file.write_text(self._kickstart(password_hash), encoding="utf-8")
         os.chmod(ks_file, 0o600)
-        install_url = f"https://download.fedoraproject.org/pub/fedora/linux/releases/{FEDORA_RELEASE}/Everything/x86_64/os/"
+        install_url = f"https://download.fedoraproject.org/pub/fedora/linux/releases/{self.fedora_release}/Everything/x86_64/os/"
         command = [
             "virt-install",
             "--connect", LIBVIRT_URI,
@@ -1154,7 +1157,7 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
         summary = {
             "vm": self.name,
             "libvirt_uri": LIBVIRT_URI,
-            "fedora_release": FEDORA_RELEASE,
+            "fedora_release": self.fedora_release,
             "desktop": self.desktop,
             "reboot": getattr(self, "_reboot_evidence", None),
             "memory_mib": MEMORY_MIB,
@@ -1205,6 +1208,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--vm-name", default=VM_NAME, help="Explicit dedicated domain name for resetting a saved fresh artifact.")
     parser.add_argument("--fresh", action="store_true", help="Provision a separate empty-disk qualification artifact; preserve the reusable base.")
     parser.add_argument("--desktop", choices=("x11", "wayland"), default="x11")
+    parser.add_argument(
+        "--fedora-release",
+        choices=("44", "45"),
+        default=FEDORA_RELEASE,
+        help="Target Fedora KDE release for VM provisioning and ownership checks.",
+    )
     parser.add_argument("--qt-runtime-manifest", type=Path, help="Explicit corrected Qt runtime manifest; disposable test-full only.")
     parser.add_argument("--reboot-check", action="store_true", help="Verify checkpoint persistence across a real guest reboot.")
     parser.add_argument("--data-root", type=Path, default=_default_data_root())
@@ -1229,7 +1238,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.data_root = args.data_root / args.desktop
             args.reports_dir = args.reports_dir / args.desktop
             name += "-" + args.desktop
-        vm = FedoraE2E(args.data_root, args.reports_dir, name=name, desktop=args.desktop, reboot_check=args.reboot_check, qt_runtime_manifest=args.qt_runtime_manifest)
+        vm = FedoraE2E(
+            args.data_root,
+            args.reports_dir,
+            name=name,
+            desktop=args.desktop,
+            reboot_check=args.reboot_check,
+            qt_runtime_manifest=args.qt_runtime_manifest,
+            fedora_release=args.fedora_release,
+        )
         if args.command == "reset":
             return vm.reset()
         previous = {sig: signal.signal(sig, vm._interrupt) for sig in (signal.SIGINT, signal.SIGTERM)}

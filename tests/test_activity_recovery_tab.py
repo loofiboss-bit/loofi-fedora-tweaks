@@ -187,3 +187,19 @@ class TestActivityRecoveryTab(unittest.TestCase):
         self.assertIsNone(tab._next_cursor)
         self.assertFalse(tab.load_more_button.isEnabled())
         tab.close()
+
+    def test_human_readable_facts_and_quick_date_range_preset(self):
+        tab = ActivityRecoveryTab(journal_service=SimpleNamespace())
+        formatted = tab._facts_text(
+            {"verification_ok": True, "affected_refs": ["app/a", "app/b"], "nested": {"exit_code": 0}}
+        )
+        self.assertIn("verification ok: yes", formatted)
+        self.assertIn("affected refs: app/a, app/b", formatted)
+        self.assertIn("exit code: 0", formatted)
+        self.assertNotIn("'", formatted)
+
+        tab.date_range_preset.setCurrentIndex(tab.date_range_preset.findData("7d"))
+        self.assertRegex(tab.since_input.text(), r"^\d{4}-\d{2}-\d{2}$")
+        tab.date_range_preset.setCurrentIndex(tab.date_range_preset.findData(""))
+        self.assertEqual(tab.since_input.text(), "")
+        tab.close()

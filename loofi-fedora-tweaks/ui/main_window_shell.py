@@ -239,3 +239,36 @@ class MainWindowShellMixin:
             if isinstance(control, QWidget):
                 add_action(control, primary=bool(primary))
         self._page_header_action_owner = widget
+
+    def _prepare_scroll_area_transition(
+        self: Any,
+        next_widget: QWidget | None,
+    ) -> None:
+        """Reset focus and scrollbars before hiding a QScrollArea page."""
+        content_area = getattr(self, "content_area", None)
+        current_fn = getattr(content_area, "currentWidget", None)
+        current = current_fn() if callable(current_fn) else None
+        if isinstance(current, QScrollArea) and current is not next_widget:
+            focus_fn = getattr(current, "focusWidget", None)
+            focused = focus_fn() if callable(focus_fn) else None
+            clear_fn = getattr(focused, "clearFocus", None)
+            if callable(clear_fn):
+                clear_fn()
+            current.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            current.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        if isinstance(next_widget, QScrollArea):
+            inner_fn = getattr(next_widget, "widget", None)
+            inner = inner_fn() if callable(inner_fn) else None
+            real_fn = getattr(inner, "get_real_widget", None)
+            real = real_fn() if callable(real_fn) else None
+            owner = real if real is not None else inner
+            if not getattr(owner, "owns_scroll", False):
+                next_widget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+    def _switch_content_widget(
+        self: Any,
+        target_widget: QWidget,
+    ) -> None:
+        """Switch content_area page safely with defensive QScrollArea hygiene."""
+        self._prepare_scroll_area_transition(target_widget)
+        self.content_area.setCurrentWidget(target_widget)

@@ -6,7 +6,7 @@ Migrated from utils/safety.py in v2.0.0.
 
 import logging
 import subprocess
-from typing import Optional
+from typing import Any, Optional
 
 from services.system.system import cached_which
 
@@ -100,66 +100,13 @@ class SafetyManager:
             return False
 
     @staticmethod
-    def confirm_action(parent, description: str) -> bool:
-        """
-        Prompt the user to confirm an action, offering to take a snapshot first.
+    def confirm_action(parent: Any, description: str) -> bool:
+        """Prompt the user to confirm an action, offering to take a snapshot first."""
+        from ui.confirm_dialog import confirm_safety_action
 
-        Note: This method imports PyQt6 lazily. The snapshot creation runs
-        with processEvents() calls to avoid a full UI freeze.
-
-        Args:
-            parent: Parent QWidget for the dialog.
-            description: Human-readable action description.
-
-        Returns:
-            True if the action should proceed, False otherwise.
-        """
-        from PyQt6.QtWidgets import QMessageBox
-
-        tool = SafetyManager.check_snapshot_tool()
-
-        msg = QMessageBox(parent)
-        msg.setWindowTitle("Safety Check")
-        msg.setText(f"You are about to: {description}")
-        msg.setInformativeText("It is recommended to create a system snapshot before proceeding.")
-        msg.setIcon(QMessageBox.Icon.Warning)
-
-        # Standard Buttons
-        msg.addButton("Continue Without Snapshot", QMessageBox.ButtonRole.ActionRole)
-        btn_cancel = msg.addButton(QMessageBox.StandardButton.Cancel)
-
-        btn_snapshot = None
-        if tool:
-            btn_snapshot = msg.addButton(
-                f"Create {tool.capitalize()} Snapshot & Continue",
-                QMessageBox.ButtonRole.ActionRole,
-            )
-            msg.setDefaultButton(btn_snapshot)
-        else:
-            msg.setDefaultButton(btn_cancel)
-
-        msg.exec()
-
-        clicked = msg.clickedButton()
-
-        if clicked == btn_cancel:
-            return False
-
-        if tool and clicked == btn_snapshot:
-            # Show a progress message while snapshot runs
-            parent.setDisabled(True)
-
-            success = SafetyManager.create_snapshot(tool, f"Pre-{description.split(' ')[0]}")
-
-            parent.setDisabled(False)
-
-            if not success:
-                QMessageBox.warning(
-                    parent,
-                    "Snapshot Failed",
-                    "Could not create snapshot. Proceeding regardless...",
-                )
-            else:
-                QMessageBox.information(parent, "Snapshot Created", "System snapshot created successfully.")
-
-        return True
+        return confirm_safety_action(
+            parent,
+            description,
+            check_snapshot_tool=SafetyManager.check_snapshot_tool,
+            create_snapshot=SafetyManager.create_snapshot,
+        )
